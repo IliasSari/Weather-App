@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Πρόγνωση Καιρού </title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+
+  <div class="container">
+    <h1>Καιρός Live</h1>
+
+    <!-- Δυναμική αναζήτηση οποιασδήποτε πόλης -->
+    <div class="search-box">
+      <input type="text" id="cityInput" placeholder="Πληκτρολογήστε πόλη (π.χ. Ιωάννινα, Ρόδος)..." />
+      <button id="searchBtn">Αναζήτηση</button>
+    </div>
+
+    <!-- Περιοχή εμφάνισης μηνυμάτων σφάλματος -->
+    <div id="errorBox" class="error"></div>
+
+    <!-- Grid όπου θα προστεθούν οι κάρτες καιρού -->
+    <div id="weatherGrid" class="grid"></div>
+  </div>
+
+</body>
+</html>
