@@ -25,6 +25,6 @@ A clean, dynamic weather web application built with **Vanilla JavaScript, HTML5,
 
 ```text
 Weather-App/
-├── weather.html   # Main HTML layout (search bar, error banner, weather grid)
+├── index.html   # Main HTML layout (search bar, error banner, weather grid)
 ├── style.css      # Responsive CSS Grid styling and card components
 └── app.js         # Core logic, Open-Meteo API calls, WMO code mapping & DOM manipulation
