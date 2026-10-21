@@ -98,8 +98,9 @@
           <div class="meta"><strong>Κατάσταση:</strong> ${description}</div>
           <div class="meta"><strong>Υγρασία:</strong> ${current.relative_humidity_2m} %</div>
           <div class="meta"><strong>Άνεμος:</strong> ${current.wind_speed_10m} km/h</div>
-        `;
-
+          <button class="delete-btn" title="Διαγραφή">Χ</button>
+          `;
+        card.querySelector(".delete-btn").addEventListener("click", () => card.remove());
         // Αν είναι αναζήτηση χρήστη μπαίνει πρώτη-πρώτη, αλλιώς στο τέλος
         if (prepend) {
           grid.prepend(card);

@@ -58,11 +58,21 @@ body {
       padding: 18px;
       border-radius: 12px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      position: relative;
     }
     .card h2 {
-      margin: 0 0 8px 0;
-      font-size: 20px;
+      margin: 0 0 10px 0;
+      font-size: 22px;
     }
+    .delete-btn 
+      {position: absolute; 
+      top: 12px; 
+      right: 12px; 
+      background: transparent; 
+      color: #94a3b8; 
+      padding: 4px 8px;
+    }
+    
     .temp {
       font-size: 32px;
       font-weight: bold;
