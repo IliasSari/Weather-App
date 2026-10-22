@@ -76,6 +76,25 @@
         // Βήμα Α: Παίρνουμε τις συντεταγμένες
         const location = await getCoordinates(cityName);
 
+        // ΕΛΕΓΧΟΣ ΔΙΠΛΟΕΓΓΡΑΦΗΣ:
+    const existingCards = Array.from(grid.querySelectorAll(".card"));
+        const isDuplicate = existingCards.some(card => {
+          // Παίρνουμε το όνομα είτε από το dataset είτε απευθείας από το κείμενο του h2
+          const h2Element = card.querySelector("h2");
+          let existingName = card.dataset.cityName || "";
+          
+          if (!existingName && h2Element) {
+            // Αν λείπει το dataset, παίρνουμε το πρώτο κομμάτι του κειμένου του h2 (πριν το <small>)
+            existingName = h2Element.childNodes[0].nodeValue.trim();
+          }
+
+          return existingName.toLowerCase() === location.name.toLowerCase();
+        });
+
+        if (isDuplicate) {
+          showError(`Η πόλη "${location.name}" υπάρχει ήδη στην λίστα!`);
+          return; // Σταματάμε αν υπάρχει ήδη
+        }
         // Βήμα Β: Τραβάμε τον τρέχοντα καιρό από το Open-Meteo API
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=auto`;
         const response = await fetch(weatherUrl);
