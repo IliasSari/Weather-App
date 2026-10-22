@@ -77,7 +77,7 @@
         const location = await getCoordinates(cityName);
 
         // ΕΛΕΓΧΟΣ ΔΙΠΛΟΕΓΓΡΑΦΗΣ:
-    const existingCards = Array.from(grid.querySelectorAll(".card"));
+        const existingCards = Array.from(grid.querySelectorAll(".card"));
         const isDuplicate = existingCards.some(card => {
           // Παίρνουμε το όνομα είτε από το dataset είτε απευθείας από το κείμενο του h2
           const h2Element = card.querySelector("h2");
