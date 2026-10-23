@@ -1,4 +1,4 @@
- // 1. Προκαθορισμένη λίστα με τις βασικές πόλεις της Ελλάδας
+    // 1. Προκαθορισμένη λίστα με τις βασικές πόλεις (χρησιμοποιείται αν δεν υπάρχει τίποτα αποθηκευμένο)
     let DEFAULT_CITIES = ["Αθήνα", "Θεσσαλονίκη", "Πάτρα", "Ηράκλειο", "Λάρισα"];
 
     // Λεξικό αντιστοίχισης κωδικών καιρού WMO σε ελληνική περιγραφή
@@ -31,19 +31,24 @@
     const cityInput = document.getElementById("cityInput");
     const searchBtn = document.getElementById("searchBtn");
 
-    // Εμφάνιση μηνύματος σφάλματος στον χρήστη
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = "block";
     }
 
-    // Απόκρυψη μηνύματος σφάλματος
     function clearError() {
       errorBox.textContent = "";
       errorBox.style.display = "none";
     }
 
-    // 2. Εύρεση συντεταγμένων της πόλης μέσω του Open-Meteo Geocoding API
+    // Συνάρτηση αποθήκευσης των πόλεων στο LocalStorage
+    function saveCitiesToStorage() {
+      const cards = Array.from(grid.querySelectorAll(".card"));
+      const cities = cards.map(card => card.dataset.cityName).filter(Boolean);
+      localStorage.setItem("weatherCities", JSON.stringify(cities));
+    }
+
+    // Εύρεση συντεταγμένων της πόλης μέσω του Open-Meteo Geocoding API
     async function getCoordinates(cityName) {
       const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=el&format=json`;
       const response = await fetch(geoUrl);
@@ -54,7 +59,6 @@
 
       const data = await response.json();
 
-      // Αν δεν βρεθεί η πόλη, πετάμε σφάλμα
       if (!data.results || data.results.length === 0) {
         throw new Error(`Δεν βρέθηκε η πόλη "${cityName}". Ελέγξτε την ορθογραφία.`);
       }
@@ -68,23 +72,20 @@
       };
     }
 
-    // 3. Λήψη δεδομένων καιρού και εμφάνιση κάρτας
-    async function fetchAndRenderWeather(cityName, prepend = false) {
+    // Λήψη δεδομένων καιρού και εμφάνιση κάρτας με έλεγχο διπλοεγγραφής
+    async function fetchAndRenderWeather(cityName, prepend = false, saveToStorage = false) {
       try {
         clearError();
 
-        // Βήμα Α: Παίρνουμε τις συντεταγμένες
         const location = await getCoordinates(cityName);
 
-        // ΕΛΕΓΧΟΣ ΔΙΠΛΟΕΓΓΡΑΦΗΣ:
+        // Έλεγχος διπλοεγγραφής
         const existingCards = Array.from(grid.querySelectorAll(".card"));
         const isDuplicate = existingCards.some(card => {
-          // Παίρνουμε το όνομα είτε από το dataset είτε απευθείας από το κείμενο του h2
           const h2Element = card.querySelector("h2");
           let existingName = card.dataset.cityName || "";
           
           if (!existingName && h2Element) {
-            // Αν λείπει το dataset, παίρνουμε το πρώτο κομμάτι του κειμένου του h2 (πριν το <small>)
             existingName = h2Element.childNodes[0].nodeValue.trim();
           }
 
@@ -92,10 +93,13 @@
         });
 
         if (isDuplicate) {
-          showError(`Η πόλη "${location.name}" υπάρχει ήδη στην λίστα!`);
-          return; // Σταματάμε αν υπάρχει ήδη
+          // Αν το καλεί ο χρήστης από αναζήτηση, δείξε σφάλμα. Αν φορτώνεται από αποθήκευση, απλά αγνόησέ το.
+          if (prepend) {
+            showError(`Η πόλη "${location.name}" υπάρχει ήδη στην λίστα!`);
+          }
+          return;
         }
-        // Βήμα Β: Τραβάμε τον τρέχοντα καιρό από το Open-Meteo API
+
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=auto`;
         const response = await fetch(weatherUrl);
 
@@ -108,39 +112,51 @@
 
         const description = WMO_CODES[current.weather_code] || `Κωδικός καιρού: ${current.weather_code}`;
 
-        // Δημιουργία κάρτας HTML για την πόλη
         const card = document.createElement("div");
         card.className = "card";
+        card.dataset.cityName = location.name;
+
         card.innerHTML = `
           <h2>${location.name} <small style="font-weight:normal; color:#64748b;">(${location.country})</small></h2>
           <div class="temp">${current.temperature_2m} °C</div>
           <div class="meta"><strong>Κατάσταση:</strong> ${description}</div>
           <div class="meta"><strong>Υγρασία:</strong> ${current.relative_humidity_2m} %</div>
           <div class="meta"><strong>Άνεμος:</strong> ${current.wind_speed_10m} km/h</div>
-          <button class="delete-btn" title="Διαγραφή">Χ</button>
-          `;
-        card.querySelector(".delete-btn").addEventListener("click", () => card.remove());
-        // Αν είναι αναζήτηση χρήστη μπαίνει πρώτη-πρώτη, αλλιώς στο τέλος
+          <button class="delete-btn" title="Διαγραφή">✕</button>
+        `;
+        
+        // Διαχείριση διαγραφής κάρτας και ενημέρωση LocalStorage
+        card.querySelector(".delete-btn").addEventListener("click", () => {
+          card.remove();
+          saveCitiesToStorage();
+        });
+        
         if (prepend) {
           grid.prepend(card);
         } else {
           grid.appendChild(card);
         }
 
+        // Αν ζητήθηκε αποθήκευση (π.χ. προσθήκη νέας πόλης από χρήστη)
+        if (saveToStorage) {
+          saveCitiesToStorage();
+        }
+
       } catch (error) {
-        // 5. Διαχείριση σφαλμάτων (λάθος πόλη ή πρόβλημα δικτύου/API)
-        showError(error.message || "Παρουσιάστηκε σφάλμα κατά την επικοινωνία με το API.");
+        if (prepend) {
+          showError(error.message || "Παρουσιάστηκε σφάλμα κατά την επικοινωνία με το API.");
+        }
       }
     }
 
-    // 4. Διαχείριση δυναμικής αναζήτησης από τον χρήστη
     function handleSearch() {
       const city = cityInput.value.trim();
       if (!city) {
         showError("Παρακαλώ πληκτρολογήστε ένα όνομα πόλης.");
         return;
       }
-      fetchAndRenderWeather(city, true);
+      // Καλούμε με prepend=true και saveToStorage=true για να αποθηκευτεί
+      fetchAndRenderWeather(city, true, true);
       cityInput.value = "";
     }
 
@@ -149,10 +165,29 @@
       if (e.key === "Enter") handleSearch();
     });
 
-    // Αρχική φόρτωση των 5 προκαθορισμένων πόλεων
+    // Αρχική φόρτωση με LocalStorage
     async function init() {
-      for (const city of DEFAULT_CITIES) {
-        await fetchAndRenderWeather(city);
+      const savedCitiesJson = localStorage.getItem("weatherCities");
+      let citiesToLoad = DEFAULT_CITIES;
+
+      if (savedCitiesJson) {
+        try {
+          const parsed = JSON.parse(savedCitiesJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            citiesToLoad = parsed;
+          }
+        } catch (e) {
+          console.error("Σφάλμα ανάγνωσης LocalStorage", e);
+        }
+      }
+
+      for (const city of citiesToLoad) {
+        await fetchAndRenderWeather(city, false, false);
+      }
+      
+      // Αποθηκεύουμε αρχική λίστα αν είναι η πρώτη φορά
+      if (!savedCitiesJson) {
+        saveCitiesToStorage();
       }
     }
 
