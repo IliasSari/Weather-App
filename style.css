@@ -185,11 +185,11 @@ body {
     }
 
     body.dark-mode input {
-      color: #f8fafc;
+      color: #000000;
     }
 
     body.dark-mode input::placeholder {
-      color: #e6e9ec;
+      color: #0969caca;
     }
 
     body.dark-mode .card {
