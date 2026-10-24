@@ -10,6 +10,18 @@ body {
       max-width: 900px;
       margin: 0 auto;
     }
+    .themeToggleBtn { 
+      position: absolute; 
+      top: 24px; 
+      right: 24px;
+      padding: 10px 14px; 
+      border-radius: 50%; width: 45px; 
+      height: 45px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; font-size: 18px;
+    }
+      
     h1 {
       text-align: center;
       margin-bottom: 24px;
@@ -154,4 +166,57 @@ body {
       justify-content: space-between;
       border-bottom: 1px dashed #e2e8f0;
       padding-bottom: 4px;
+    }
+    body.dark-mode {
+      background: radial-gradient(circle at top left, #0f172a, #1e293b, #090d16);
+      color: #f8fafc;
+    }
+
+    body.dark-mode .container h1 {
+      color: #f8fafc;
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    body.dark-mode .search-box {
+      background: rgba(49, 72, 108, 0.8);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-mode input {
+      color: #f8fafc;
+    }
+
+    body.dark-mode input::placeholder {
+      color: #e6e9ec;
+    }
+
+    body.dark-mode .card {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    body.dark-mode .card h2 {
+      color: #f8fafc;
+    }
+
+    body.dark-mode .card small {
+      color: #94a3b8 !important;
+    }
+
+    body.dark-mode .meta {
+      color: #cbd5e1;
+      border-bottom-color: rgba(51, 65, 85, 0.8);
+    }
+
+    body.dark-mode .delete-btn {
+      background: #334155;
+      color: #94a3b8;
+    }
+
+    body.dark-mode .delete-btn:hover {
+      background: #7f1d1d;
+      color: #fca5a5;
     }

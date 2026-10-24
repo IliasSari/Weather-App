@@ -192,3 +192,24 @@
     }
 
     init();
+    // --- DARK MODE LOGIC ---
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    
+    // Έλεγχος αν ο χρήστης είχε αποθηκευμένο Dark Mode προηγουμένως
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark-mode");
+      themeToggleBtn.textContent = "☀️";
+    }
+
+    themeToggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      
+      if (document.body.classList.contains("dark-mode")) {
+        localStorage.setItem("theme", "dark");
+        themeToggleBtn.textContent = "☀️";
+      } else {
+        localStorage.setItem("theme", "light");
+        themeToggleBtn.textContent = "🌙";
+      }
+    });
