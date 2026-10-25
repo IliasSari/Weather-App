@@ -122,10 +122,61 @@
           <div class="meta"><strong>Κατάσταση:</strong> ${description}</div>
           <div class="meta"><strong>Υγρασία:</strong> ${current.relative_humidity_2m} %</div>
           <div class="meta"><strong>Άνεμος:</strong> ${current.wind_speed_10m} km/h</div>
+          
+          <button class="forecast-btn" style="margin-top: 12px; width: 100%; padding: 8px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #2563eb; transition: all 0.2s;">📅 7-ήμερη Πρόγνωση</button>
+          
+          <div class="forecast-list" style="display: none; margin-top: 12px; font-size: 13px; border-top: 1px dashed #cbd5e1; padding-top: 8px;"></div>
+          
           <button class="delete-btn" title="Διαγραφή">✕</button>
         `;
         
-        // Διαχείριση διαγραφής κάρτας και ενημέρωση LocalStorage
+        // Λογική για την προβολή/απόκρυψη της 7-ήμερης πρόγνωσης
+        const forecastBtn = card.querySelector(".forecast-btn");
+        const forecastList = card.querySelector(".forecast-list");
+        
+        forecastBtn.addEventListener("click", async () => {
+          if (forecastList.style.display === "none") {
+            // Αν είναι κλειστό και δεν έχουμε φέρει τα δεδομένα ακόμα, τα ζητάμε από το API
+            if (forecastList.innerHTML === "") {
+              forecastList.innerHTML = "Φόρτωση πρόγνωσης...";
+              try {
+                const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
+                const fResponse = await fetch(forecastUrl);
+                const fData = await fResponse.json();
+                
+                let html = "<div style='font-weight:bold; margin-bottom:6px; color:#1e293b;'>Επόμενες ημέρες:</div>";
+                
+                for (let i = 0; i < fData.daily.time.length; i++) {
+                  // Μετατροπή ημερομηνίας σε readable μορφή (π.χ. Δευ, 26/10)
+                  const dateObj = new Date(fData.daily.time[i]);
+                  const dateStr = dateObj.toLocaleDateString('el-GR', { weekday: 'short', month: 'numeric', day: 'numeric' });
+                  
+                  const maxTemp = Math.round(fData.daily.temperature_2m_max[i]);
+                  const minTemp = Math.round(fData.daily.temperature_2m_min[i]);
+                  const code = fData.daily.weather_code[i];
+                  const descIcon = WMO_CODES[code] ? WMO_CODES[code].split(" ").pop() : "🌡️"; // Παίρνουμε το emoji αν υπάρχει
+                  
+                  html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.03);">
+                      <span>${dateStr} ${descIcon}</span>
+                      <span style="font-weight:600;">${minTemp}°C / ${maxTemp}°C</span>
+                    </div>
+                  `;
+                }
+                forecastList.innerHTML = html;
+              } catch (err) {
+                forecastList.innerHTML = "Αποτυχία φόρτωσης πρόγνωσης.";
+              }
+            }
+            forecastList.style.display = "block";
+            forecastBtn.textContent = "📅 Απόκρυψη πρόγνωσης";
+          } else {
+            forecastList.style.display = "none";
+            forecastBtn.textContent = "📅 7-ήμερη Πρόγνωση";
+          }
+        });
+
+        // Διαχείριση διαγραφής κάρτας
         card.querySelector(".delete-btn").addEventListener("click", () => {
           card.remove();
           saveCitiesToStorage();
