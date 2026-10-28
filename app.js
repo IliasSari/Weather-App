@@ -1,4 +1,4 @@
-    // 1. Προκαθορισμένη λίστα με τις βασικές πόλεις (χρησιμοποιείται αν δεν υπάρχει τίποτα αποθηκευμένο)
+// 1. Προκαθορισμένη λίστα με τις βασικές πόλεις
     let DEFAULT_CITIES = ["Αθήνα", "Θεσσαλονίκη", "Πάτρα", "Ηράκλειο", "Λάρισα"];
 
     // Λεξικό αντιστοίχισης κωδικών καιρού WMO σε ελληνική περιγραφή
@@ -31,19 +31,22 @@
     const cityInput = document.getElementById("cityInput");
     const searchBtn = document.getElementById("searchBtn");
 
+    // Εμφάνιση μηνύματος σφάλματος στον χρήστη
     function showError(message) {
       errorBox.textContent = message;
       errorBox.style.display = "block";
     }
 
+    // Καθαρισμός και απόκρυψη του πεδίου σφαλμάτων
     function clearError() {
       errorBox.textContent = "";
       errorBox.style.display = "none";
     }
 
-    // Συνάρτηση αποθήκευσης των πόλεων στο LocalStorage
+    // Συνάρτηση αποθήκευσης των τρεχουσών πόλεων του DOM στο LocalStorage
     function saveCitiesToStorage() {
       const cards = Array.from(grid.querySelectorAll(".card"));
+      // Συλλέγουμε τα ονόματα από το dataset των καρτών
       const cities = cards.map(card => card.dataset.cityName).filter(Boolean);
       localStorage.setItem("weatherCities", JSON.stringify(cities));
     }
@@ -77,14 +80,16 @@
       try {
         clearError();
 
+        // 1. Ανάκτηση γεωγραφικών συντεταγμένων για την πόλη-στόχο
         const location = await getCoordinates(cityName);
 
-        // Έλεγχος διπλοεγγραφής
+        // 2. Έλεγχος διπλοεγγραφής στις ήδη υπάρχουσες κάρτες του UI
         const existingCards = Array.from(grid.querySelectorAll(".card"));
         const isDuplicate = existingCards.some(card => {
           const h2Element = card.querySelector("h2");
           let existingName = card.dataset.cityName || "";
           
+          // Fallback αν δεν υπάρχει το dataset, διαβάζουμε απευθείας από το κείμενο του τίτλου
           if (!existingName && h2Element) {
             existingName = h2Element.childNodes[0].nodeValue.trim();
           }
@@ -93,13 +98,15 @@
         });
 
         if (isDuplicate) {
-          // Αν το καλεί ο χρήστης από αναζήτηση, δείξε σφάλμα. Αν φορτώνεται από αποθήκευση, απλά αγνόησέ το.
+          // Αν το καλεί ο χρήστης από αναζήτηση (prepend=true), δείξε σφάλμα. 
+          // Αν φορτώνεται αυτόματα από την αποθήκευση, απλά αγνόησέ το.
           if (prepend) {
             showError(`Η πόλη "${location.name}" υπάρχει ήδη στην λίστα!`);
           }
           return;
         }
 
+        // 3. Κλήση του Weather Forecast API για τα τρέχοντα δεδομένα
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.lat}&longitude=${location.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=auto`;
         const response = await fetch(weatherUrl);
 
@@ -110,11 +117,13 @@
         const data = await response.json();
         const current = data.current;
 
+        // Αντιστοίχιση κωδικού καιρού σε λεκτική περιγραφή μέσω του WMO_CODES
         const description = WMO_CODES[current.weather_code] || `Κωδικός καιρού: ${current.weather_code}`;
 
+        // 4. Δημιουργία και δόμηση του HTML στοιχείου της κάρτας καιρού
         const card = document.createElement("div");
         card.className = "card";
-        card.dataset.cityName = location.name;
+        card.dataset.cityName = location.name; // Αποθήκευση ονόματος στο dataset για μελλοντικούς ελέγχους
 
         card.innerHTML = `
           <h2>${location.name} <small style="font-weight:normal; color:#64748b;">(${location.country})</small></h2>
@@ -130,13 +139,13 @@
           <button class="delete-btn" title="Διαγραφή">✕</button>
         `;
         
-        // Λογική για την προβολή/απόκρυψη της 7-ήμερης πρόγνωσης
+        // 5. Λογική Lazy Loading για την προβολή/απόκρυψη της 7-ήμερης πρόγνωσης
         const forecastBtn = card.querySelector(".forecast-btn");
         const forecastList = card.querySelector(".forecast-list");
         
         forecastBtn.addEventListener("click", async () => {
           if (forecastList.style.display === "none") {
-            // Αν είναι κλειστό και δεν έχουμε φέρει τα δεδομένα ακόμα, τα ζητάμε από το API
+            // Αν είναι κλειστό και δεν έχουμε φέρει τα δεδομένα ακόμα, τα ζητάμε δυναμικά από το API
             if (forecastList.innerHTML === "") {
               forecastList.innerHTML = "Φόρτωση πρόγνωσης...";
               try {
@@ -146,15 +155,16 @@
                 
                 let html = "<div style='font-weight:bold; margin-bottom:6px; color:#1e293b;'>Επόμενες ημέρες:</div>";
                 
+                // Διάσχιση των ημερήσιων δεδομένων πρόγνωσης
                 for (let i = 0; i < fData.daily.time.length; i++) {
-                  // Μετατροπή ημερομηνίας σε readable μορφή (π.χ. Δευ, 26/10)
+                  // Μετατροπή ημερομηνίας σε αναγνώσιμη μορφή (π.χ. Δευ, 26/10)
                   const dateObj = new Date(fData.daily.time[i]);
                   const dateStr = dateObj.toLocaleDateString('el-GR', { weekday: 'short', month: 'numeric', day: 'numeric' });
                   
                   const maxTemp = Math.round(fData.daily.temperature_2m_max[i]);
                   const minTemp = Math.round(fData.daily.temperature_2m_min[i]);
                   const code = fData.daily.weather_code[i];
-                  const descIcon = WMO_CODES[code] ? WMO_CODES[code].split(" ").pop() : "🌡️"; // Παίρνουμε το emoji αν υπάρχει
+                  const descIcon = WMO_CODES[code] ? WMO_CODES[code].split(" ").pop() : "🌡️"; // Εξαγωγή emoji καιρού
                   
                   html += `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(0,0,0,0.03);">
@@ -176,19 +186,20 @@
           }
         });
 
-        // Διαχείριση διαγραφής κάρτας
+        // 6. Διαχείριση συμβάντος διαγραφής κάρτας από το UI και ενημέρωση LocalStorage
         card.querySelector(".delete-btn").addEventListener("click", () => {
           card.remove();
           saveCitiesToStorage();
         });
         
+        // Τοποθέτηση της κάρτας στην αρχή (π.χ. νέα αναζήτηση) ή στο τέλος (π.χ. αρχική φόρτωση) του grid
         if (prepend) {
           grid.prepend(card);
         } else {
           grid.appendChild(card);
         }
 
-        // Αν ζητήθηκε αποθήκευση (π.χ. προσθήκη νέας πόλης από χρήστη)
+        // Αν ζητήθηκε αποθήκευση (π.χ. προσθήκη νέας πόλης από τον χρήστη), ενημερώνουμε το LocalStorage
         if (saveToStorage) {
           saveCitiesToStorage();
         }
@@ -200,15 +211,16 @@
       }
     }
 
+    // Διαχείριση ενέργειας αναζήτησης μέσω κουμπιού ή πλήκτρου Enter
     function handleSearch() {
       const city = cityInput.value.trim();
       if (!city) {
         showError("Παρακαλώ πληκτρολογήστε ένα όνομα πόλης.");
         return;
       }
-      // Καλούμε με prepend=true και saveToStorage=true για να αποθηκευτεί
+      // Καλούμε με prepend=true (για να μπει μπροστά) και saveToStorage=true (για να αποθηκευτεί)
       fetchAndRenderWeather(city, true, true);
-      cityInput.value = "";
+      cityInput.value = ""; // Καθαρισμός input πεδίου
     }
 
     searchBtn.addEventListener("click", handleSearch);
@@ -216,11 +228,12 @@
       if (e.key === "Enter") handleSearch();
     });
 
-    // Αρχική φόρτωση με LocalStorage
+    // Αρχική φόρτωση εφαρμογής με ανάγνωση δεδομένων από το LocalStorage
     async function init() {
       const savedCitiesJson = localStorage.getItem("weatherCities");
       let citiesToLoad = DEFAULT_CITIES;
 
+      // Αν υπάρχουν αποθηκευμένες πόλεις, τις αποκωδικοποιούμε
       if (savedCitiesJson) {
         try {
           const parsed = JSON.parse(savedCitiesJson);
@@ -232,27 +245,30 @@
         }
       }
 
+      // Σειριακή φόρτωση των πόλεων που πρέπει να εμφανιστούν στην αρχή
       for (const city of citiesToLoad) {
         await fetchAndRenderWeather(city, false, false);
       }
       
-      // Αποθηκεύουμε αρχική λίστα αν είναι η πρώτη φορά
+      // Αποθηκεύουμε την προκαθορισμένη λίστα αν εκτελείται για πρώτη φορά (δεν υπάρχει εγγραφή)
       if (!savedCitiesJson) {
         saveCitiesToStorage();
       }
     }
 
     init();
+
     // --- DARK MODE LOGIC ---
     const themeToggleBtn = document.getElementById("themeToggleBtn");
     
-    // Έλεγχος αν ο χρήστης είχε αποθηκευμένο Dark Mode προηγουμένως
+    // Έλεγχος αν ο χρήστης είχε ενεργό Dark Mode σε προηγούμενη επίσκεψη
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark") {
       document.body.classList.add("dark-mode");
       themeToggleBtn.textContent = "☀️";
     }
 
+    // Εναλλαγή και αποθήκευση κατάστασης Dark/Light mode με κλικ στο κουμπί
     themeToggleBtn.addEventListener("click", () => {
       document.body.classList.toggle("dark-mode");
       
